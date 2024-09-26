@@ -1,0 +1,13 @@
+name: Test Action
+on:
+  pull_request
+jobs:
+  test:
+    name: Test1
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: cat file
+        run: cat test.txt
