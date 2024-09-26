@@ -9,5 +9,5 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - cat file
+      - name: cat file
         run: cat test.txt
