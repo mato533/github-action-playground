@@ -9,15 +9,7 @@ on:
   
 permissions:
   pull-requests: write
-  # push:
-  #   branches:
-  #     - develop
-  #     - release
-  #     - main
-  #   paths:
-  #     - '*'
-  #     - src/**
-  #     - '!**.md'
+  
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
