@@ -111,16 +111,21 @@ jobs:
       - name: check branch
         id: check-branch
         run: |
-          delimiter=/
-          branch_name="${{ github.head_ref }}"
-          APP_VERSION_TEXT=${branch_name##*${delimiter}}
+          BRANCH_NAME="${{ github.head_ref }}"
+          APP_VERSION_TEXT=${BRANCH_NAME##*/}
+          APP_VERSION="$(echo "${APP_VERSION_TEXT}"| grep -o -E "([0-9]+\.){1}[0-9]+(\.[0-9]+)?")"
           echo "app_version_text=${APP_VERSION_TEXT}" >>"${GITHUB_OUTPUT}"
+          echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
           VAR_NAME="is_error_package_json"
           if [ "${APP_VERSION_TEXT}" = "${{ needs.get_version.outputs.app_version_text }}" ]; then
-            echo "OK"
+            echo "Branch name and package.json are consistent"
+            echo "  from branch name  : ${APP_VERSION_TEXT}"
+            echo "  from package.json : ${{ needs.get_version.outputs.app_version_text }}"
             echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
           else
-            echo "NG"
+            echo "Branch name and package.json are inconsistent"
+            echo "  from branch name  : ${APP_VERSION_TEXT}"
+            echo "  from package.json : ${{ needs.get_version.outputs.app_version_text }}"
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           fi
       - name: update pr
@@ -129,7 +134,7 @@ jobs:
           COMMENT_FILE="pull_request_comment"
           cat<<EOF >"${COMMENT_FILE}"
           please update package.json
-            release version: ${{ steps.check-branch.outputs.app_version_text}}
+            release version: ${{ steps.check-branch.outputs.app_version}}
             package.json   : ${{ needs.get_version.outputs.app_version }}
           EOF
           URL="${{ github.event.pull_request.html_url }}"
