@@ -1,0 +1,33 @@
+name: Get version
+on:
+  workflow_call:
+    outputs:
+      app_version:
+        description: "The first output string"
+        value: ${{ jobs.get_version.outputs.app_version }}
+      app_version_text:
+        description: "The second output string"
+        value: ${{ jobs.get_version.outputs.app_version_text }}
+jobs:
+  get_version:
+    name: Get versioon from package.json
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.identify-version.outputs.app_version }}
+      app_version_text: ${{ steps.identify-version.outputs.app_version_text }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Identify the version about to release
+        id: identify-version
+        run: |
+          APP_VERSION="$(cat ./package.json |jq .version|sed -e 's/"//g'| head -n1)"
+          if [ ! -n "${APP_VERSION}" ]; then
+            exit 255
+          fi
+          echo "Detected the version: ${APP_VERSION}"
+          echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "app_version_text=v${APP_VERSION}" >>"${GITHUB_OUTPUT}"

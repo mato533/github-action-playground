@@ -1,4 +1,4 @@
-name: Test Action
+name: CI
 on:
   push:
     paths:
@@ -8,8 +8,15 @@ on:
   workflow_call:
 
 jobs:
+  check_wip:
+    name: check_wip
+    uses: ./.github/workflows/wip_check.yml
+    
   test:
     name: Test1
+    needs:
+      - check_wip
+    if: ${{ needs.check_wip.outputs.is_wip == 0 }}
     runs-on: ubuntu-latest
     steps:
       - name: checkout
