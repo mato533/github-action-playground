@@ -1,0 +1,27 @@
+前提はリリース前のチェック。release/v*のフォーマットのリポジトリで作成されたPR
+
+# リモートとの差分を確認する
+
+
+# git fetch origin main
+# git diff origin/main --relative package.json |grep '"version":'
+# - name: Check the version
+# id: check-diff-version
+# run: |
+#   DIFF_COUNT="$(git diff HEAD HEAD^ --relative package.json |grep '"version":'|wc -l)"
+#   VAR_NAME="is_update_version"
+#   if [ ${DIFF_COUNT} -eq 2 ]; then
+#     echo "Detected to have updated the version in package.json"
+#     echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
+#   else
+#     echo "The version in package.json is not updated"
+#     echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
+#   fi
+
+# okならバージョンの確認
+          APP_VERSION="$(cat ./package.json |jq .version|sed -e 's/"//g'| head -n1)"
+
+# #${{ github.event.pull_request.title }}
+# コミットメッセージとpackage.jsonから取得したバージョンが一致していることを確認
+          COUNT_VERSION="$(echo "${COMMIT_MSG_LOW}" | grep "${{steps.identify-version.outputs.app_version}}" | wc -l)"
+
