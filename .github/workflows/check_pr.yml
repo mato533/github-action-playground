@@ -1,5 +1,5 @@
 # Lint/Test はpull オープン時オープン時
-name: Check
+name: Check for pull request
 on:
   pull_request:
     types:
