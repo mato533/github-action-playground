@@ -128,12 +128,23 @@ jobs:
             echo "  from package.json : ${{ needs.get_version.outputs.app_version_text }}"
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           fi
-      - name: update pr
+      - name: update pr (inconsistent)
         if: ${{ steps.check-branch.outputs.is_error_package_json > 0 }}
         run: |
           COMMENT_FILE="pull_request_comment"
           cat<<EOF >"${COMMENT_FILE}"
-          please update package.json
+          Please update package.json
+            release version: ${{ steps.check-branch.outputs.app_version}}
+            package.json   : ${{ needs.get_version.outputs.app_version }}
+          EOF
+          URL="${{ github.event.pull_request.html_url }}"
+          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}" || gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+      - name: update pr (consistent)
+        if: ${{ steps.check-branch.outputs.is_error_package_json == 0 }}
+        run: |
+          COMMENT_FILE="pull_request_comment"
+          cat<<EOF >"${COMMENT_FILE}"
+          Ready to release.
             release version: ${{ steps.check-branch.outputs.app_version}}
             package.json   : ${{ needs.get_version.outputs.app_version }}
           EOF
