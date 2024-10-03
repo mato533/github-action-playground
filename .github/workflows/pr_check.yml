@@ -44,6 +44,7 @@ jobs:
           # ========
           ${{ github.event.pull_request.commits }}
           EOF
+        # lint したらテストコマンドを流す
 
       - name: Set Github user informations.
         run: |
@@ -76,10 +77,9 @@ jobs:
     if: ${{ startsWith(github.head_ref, 'release/') }}
     uses: ./.github/workflows/version.yml
 
-  prepare:
+  check_package_json:
     # プルリク作った時、package.jsonが更新されてるか確認したい。
-    name: Release check
-    #if: github.repository == 'mato533/rollup-plugin-gas'
+    name: Check the version of package.json
     needs:
       - check_wip
       - get_version
@@ -96,7 +96,6 @@ jobs:
       - name: Check the version
         id: check-diff-version
         run: |
-          
           DIFF_COUNT="$(git diff origin/main --relative package.json |grep '"version":'|wc -l)"
           VAR_NAME="is_update_version"
           if [ ${DIFF_COUNT} -eq 2 ]; then
