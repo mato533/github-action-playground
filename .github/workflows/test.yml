@@ -41,7 +41,7 @@ jobs:
         id: check_wip
         run: |
           msg="$(git show ${{ github.event.pull_request.head.sha }} -s --format=%B|head -n 1|grep 'wip:' |wc -l )"
-          echo "is_wip=${msg}"">>"${GITHUB_OUTPUT}"
+          echo "is_wip=${msg}">>"${GITHUB_OUTPUT}"
           
   lint:
     # if: ${{ !contains( github.event.commits.message, 'wip:') }}
