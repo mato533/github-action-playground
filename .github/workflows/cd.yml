@@ -1,18 +1,46 @@
 name: CD
 on:
-  push:
+  pull_request:
+    types:
+    - closed
     branches:
-      - develop
-      - release
-      - main
-    paths:
-      - '*'
-      - src/**
-      - '!**.md'
+    - main
+
 jobs:
+  check-release:
+    name: Check release
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.check.outputs.is_release }}
+    steps:
+      - name: check
+        id: check
+        run: |
+          SOURCE="${{ github.head_ref }}"
+          TARGET="${{ github.base_ref }}"
+          VAR_NAME="is_release"
+          if  [[ ${SOURCE} == "feature/*" ]] && [[ ${TARGET} == "main" ]]; then
+            echo "is_release=1"
+            echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
+          else
+            echo "is_release=0"
+            echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
+          fi
+
+
+    # check release/* -> mainへのマージ
   test:
+    needs: 
+      - check-release
+    if: ${{ needs.check-release.outputs.is_release > 0 }}
+    uses: ./.github/workflows/ci.yml
+
+  build:
     name: Test1
     runs-on: ubuntu-latest
+    needs:
+      - test
     steps:
       - name: checkout
         uses: actions/checkout@v4

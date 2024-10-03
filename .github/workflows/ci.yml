@@ -5,6 +5,8 @@ on:
       - '*'
       - src/**
       - '!**.md'
+  workflow_call:
+
 jobs:
   test:
     name: Test1
