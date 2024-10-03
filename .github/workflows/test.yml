@@ -72,37 +72,26 @@ jobs:
           git commit -m "style: format and lint source codes"
           git push
 
+  get_version:
+    name: get version
+    uses: ./.github/workflows/version.yml
+
   prepare:
     # プルリク作った時、package.jsonが更新されてるか確認したい。
     name: Release check
     #if: github.repository == 'mato533/rollup-plugin-gas'
     needs:
       - check_wip
+      - get_version
     if: ${{ startsWith(github.head_ref, 'release/') && (needs.check_wip.outputs.is_wip == 0) }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-    outputs:
-      is_release: ${{ steps.check-branch.outputs.is_error_branch_name }}
-      app_version: ${{ steps.identify-version.outputs.app_version }}
-      app_version_text: ${{ steps.identify-version.outputs.app_version_text }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-
-      - name: Identify the version about to release
-        id: identify-version
-        run: |
-          APP_VERSION="$(cat ./package.json |jq .version|sed -e 's/"//g'| head -n1)"
-          if [ ! -n "${APP_VERSION}" ]; then
-            exit 255
-          fi
-          echo "Detected the version: ${APP_VERSION}"
-          echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
-          echo "app_version_text=v${APP_VERSION}" >>"${GITHUB_OUTPUT}"
-
 
       - name: Check the version
         id: check-diff-version
@@ -125,7 +114,7 @@ jobs:
           branch_name="${{ github.head_ref }}"
           APP_VERSION_TEXT=${branch_name##*${delimiter}}
           VAR_NAME="is_error_branch_name"
-          if [ "${APP_VERSION_TEXT}" = "release/${{ steps.identify-version.outputs.app_version_text }}"]; then
+          if [ "${APP_VERSION_TEXT}" = "release/${{ needs.get_version.outputs.app_version_text }}"]; then
             echo "OK"
             echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
           else
@@ -133,13 +122,11 @@ jobs:
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           fi
       - name: update pr
-        env:
-          URL: ${{ github.event.pull_request.html_url }}
         run: |
           COMMENT_FILE="pull_request_comment"
           cat<<EOF >"${COMMENT_FILE}"
           please update package.json
             release version: ${APP_VERSION_TEXT}
-            package.json   : ${{ steps.identify-version.outputs.app_version_text  }}
+            package.json   : ${{ needs.get_version.outputs.app_version }}
           EOF
-          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}"
+          gh pr comment --edit-last -F "${COMMENT_FILE}" "${{ github.event.pull_request.html_url }}"
