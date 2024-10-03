@@ -1,5 +1,5 @@
 # Lint/Test はpull オープン時オープン時
-name: Check for pull request
+name: Check
 on:
   pull_request:
     types:
@@ -111,42 +111,23 @@ jobs:
       - name: check branch
         id: check-branch
         run: |
-          BRANCH_NAME="${{ github.head_ref }}"
-          APP_VERSION_TEXT=${BRANCH_NAME##*/}
-          APP_VERSION="$(echo "${APP_VERSION_TEXT}"| grep -o -E "([0-9]+\.){1}[0-9]+(\.[0-9]+)?")"
-          echo "app_version_text=${APP_VERSION_TEXT}" >>"${GITHUB_OUTPUT}"
-          echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
-          VAR_NAME="is_error_package_json"
-          if [ "${APP_VERSION_TEXT}" = "${{ needs.get_version.outputs.app_version_text }}" ]; then
-            echo "Branch name and package.json are consistent"
-            echo "  from branch name  : ${APP_VERSION_TEXT}"
-            echo "  from package.json : ${{ needs.get_version.outputs.app_version_text }}"
+          delimiter=/
+          branch_name="${{ github.head_ref }}"
+          APP_VERSION_TEXT=${branch_name##*${delimiter}}
+          VAR_NAME="is_error_branch_name"
+          if [ "${APP_VERSION_TEXT}" = "release/${{ needs.get_version.outputs.app_version_text }}"]; then
+            echo "OK"
             echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
           else
-            echo "Branch name and package.json are inconsistent"
-            echo "  from branch name  : ${APP_VERSION_TEXT}"
-            echo "  from package.json : ${{ needs.get_version.outputs.app_version_text }}"
+            echo "NG"
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           fi
-      - name: update pr (inconsistent)
-        if: ${{ steps.check-branch.outputs.is_error_package_json > 0 }}
+      - name: update pr
         run: |
           COMMENT_FILE="pull_request_comment"
           cat<<EOF >"${COMMENT_FILE}"
-          Please update package.json
-            release version: ${{ steps.check-branch.outputs.app_version}}
+          please update package.json
+            release version: ${APP_VERSION_TEXT}
             package.json   : ${{ needs.get_version.outputs.app_version }}
           EOF
-          URL="${{ github.event.pull_request.html_url }}"
-          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}" || gh pr comment -F "${COMMENT_FILE}" "${URL}" 
-      - name: update pr (consistent)
-        if: ${{ steps.check-branch.outputs.is_error_package_json == 0 }}
-        run: |
-          COMMENT_FILE="pull_request_comment"
-          cat<<EOF >"${COMMENT_FILE}"
-          Ready to release.
-            release version: ${{ steps.check-branch.outputs.app_version}}
-            package.json   : ${{ needs.get_version.outputs.app_version }}
-          EOF
-          URL="${{ github.event.pull_request.html_url }}"
-          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}" || gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+          gh pr comment --edit-last -F "${COMMENT_FILE}" "${{ github.event.pull_request.html_url }}"
