@@ -1,6 +1,10 @@
 name: Test Action
 on:
-  pull_request
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
 jobs:
   test:
     name: Test1
@@ -11,3 +15,15 @@ jobs:
 
       - name: cat file
         run: cat test.txt
+
+      - name: Git
+        run: |
+          echo '1' $GITHUB_REF
+          echo '2' ${{ github.ref }}
+          echo '3' ${{ github.ref_name }}
+          echo '4' ${{ github.head_ref }}
+          echo '5' ${{ github.base_ref }}
+
+      - name: check log
+        run: |
+          git log --pretty=format:"%h - %an, %ar : %s" |head -n 10
