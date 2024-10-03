@@ -92,7 +92,7 @@ jobs:
     #if: github.repository == 'mato533/rollup-plugin-gas'
     needs:
       - check_wip
-    if: startsWith(github.head_ref, 'release/') && ${{ needs.check_wip.outputs.is_wip == 0 }}
+    if: ${{ startsWith(github.head_ref, 'release/') && (needs.check_wip.outputs.is_wip == 0) }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -156,4 +156,4 @@ jobs:
             release version: ${APP_VERSION_TEXT}
             package.json   : ${{ steps.identify-version.outputs.app_version_text  }}
           EOF
-          gh pr comment -F "${COMMENT_FILE}" "${URL}"
+          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}"
