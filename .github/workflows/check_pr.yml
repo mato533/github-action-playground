@@ -9,7 +9,7 @@ on:
   
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: check-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -36,7 +36,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          fetch-depth: 2
       
           
       - name: lint
