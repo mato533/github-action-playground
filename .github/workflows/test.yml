@@ -48,7 +48,7 @@ jobs:
     name: lint
     needs:
       - check_wip
-    if: ${{ needs.check_wip.outputs.is_wip > 0 }}
+    if: ${{ needs.check_wip.outputs.is_wip == 0 }}
     runs-on: ubuntu-latest
     outputs:
       is_release: ${{ steps.check_changes.outputs.is_changed }}
@@ -96,7 +96,9 @@ jobs:
     # プルリク作った時、package.jsonが更新されてるか確認したい。
     name: Release check
     #if: github.repository == 'mato533/rollup-plugin-gas'
-    if: startsWith(github.head_ref, 'release/')
+    needs:
+      - check_wip
+    if: startsWith(github.head_ref, 'release/') && ${{ needs.check_wip.outputs.is_wip == 0 }}
     runs-on: ubuntu-latest
     outputs:
       is_release: ${{ steps.check-branch.outputs.is_error_branch_name }}
