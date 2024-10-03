@@ -7,9 +7,6 @@ on:
       - reopened
       - synchronize
   
-permissions:
-  pull-requests: write
-  repository-projects: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -97,6 +94,8 @@ jobs:
       - check_wip
     if: startsWith(github.head_ref, 'release/') && ${{ needs.check_wip.outputs.is_wip == 0 }}
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     outputs:
       is_release: ${{ steps.check-branch.outputs.is_error_branch_name }}
       app_version: ${{ steps.identify-version.outputs.app_version }}
