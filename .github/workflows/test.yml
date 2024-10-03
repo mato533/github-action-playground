@@ -116,8 +116,8 @@ jobs:
           APP_VERSION_TEXT=${branch_name##*${delimiter}}
           echo "app_version_text=${APP_VERSION_TEXT}" >>"${GITHUB_OUTPUT}"
           VAR_NAME="is_error_package_json"
-          if [ "${APP_VERSION_TEXT}" = "release/${{ needs.get_version.outputs.app_version_text }}"]; then
-            echo "OK"is_error_branch_name
+          if [ "${APP_VERSION_TEXT}" = "${{ needs.get_version.outputs.app_version_text }}" ]; then
+            echo "OK"
             echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
           else
             echo "NG"
