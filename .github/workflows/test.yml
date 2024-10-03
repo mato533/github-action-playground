@@ -9,7 +9,7 @@ on:
   
 permissions:
   pull-requests: write
-  
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -80,6 +80,7 @@ jobs:
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           fi
 
+          
       - name: Commit & push
         if: ${{ steps.check_changes.outputs.is_changed > 0 }}
         run: |
