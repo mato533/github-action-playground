@@ -30,7 +30,7 @@ jobs:
           SOURCE="${{ github.head_ref }}"
           TARGET="${{ github.base_ref }}"
           VAR_NAME="is_release"
-          if  [[ ${SOURCE} == "release/*" ]] && [[ ${TARGET} == "main" ]]; then
+          if  [[ ${SOURCE} == release/* ]] && [[ ${TARGET} == "main" ]]; then
             echo "is_release=1"
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           else
