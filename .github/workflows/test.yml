@@ -130,4 +130,5 @@ jobs:
             release version: ${APP_VERSION_TEXT}
             package.json   : ${{ needs.get_version.outputs.app_version }}
           EOF
-          gh pr comment --edit-last -F "${COMMENT_FILE}" "${{ github.event.pull_request.html_url }}"
+          URL="${{ github.event.pull_request.html_url }}"
+          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}" || gh pr comment -F "${COMMENT_FILE}" "${URL}" 
