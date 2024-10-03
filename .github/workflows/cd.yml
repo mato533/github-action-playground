@@ -28,7 +28,6 @@ jobs:
             echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
           fi
 
-
     # check release/* -> mainへのマージ
   test:
     needs: 
