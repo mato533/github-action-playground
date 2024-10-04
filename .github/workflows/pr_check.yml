@@ -140,9 +140,17 @@ jobs:
           git commit -m "chore: update version of package.json"
           git push
 
+      - name: Git
+        run: |
+          echo '1 $GITHUB_REF     ' $GITHUB_REF
+          echo '2 github.ref      ' ${{ github.ref }}
+          echo '3 github.ref_name ' ${{ github.ref_name }}
+          echo '4 github.head_ref ' ${{ github.head_ref }} 
+          echo '5 github.base_ref '  ${{ github.base_ref }}
+
   run_test:
     # プルリク作った時、package.jsonが更新されてるか確認したい。
-    name: run
+    name: run Test
     needs:
       - lint
       - check_package_json
