@@ -16,9 +16,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test
+        run: |
+          echo ${{ github.event.issue.pull_request }}
+          echo ${{ github.event.comment.body }}
   test:
     # add comment of pull request && comment is KEYWORD
-    if: (github.event.issue.pull_request != null) && github.event.comment.body == '!github run-test'
+    if: (github.event.issue.pull_request != null) && github.event.comment.body == '@github run-test'
     runs-on: ubuntu-latest
     steps:
       # (1) github-scriptを使って、プルリクコメントが付けられたプルリクのマージ元ブランチ名を取得
