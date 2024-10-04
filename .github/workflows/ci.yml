@@ -61,3 +61,7 @@ jobs:
       - name: check log
         run: |
           git log --pretty=format:"%h - %an, %ar : %s" |head -n 10
+
+
+      - name: Run CI
+        uses: ./.github/workflows/test.yml
