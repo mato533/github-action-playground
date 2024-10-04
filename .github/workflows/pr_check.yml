@@ -142,9 +142,9 @@ jobs:
           echo "is_updated_package=${is_updated_package}"
           
           is_updated_lint=$(test -z "${{needs.lint.outputs.is_update_format}}" && echo 0 || echo ${{needs.lint.outputs.is_update_format}})
-          echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}">>"${GITHUB_OUTPUT}"
-          echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}"
-          if  [ $is_updated_package = 0 ] && [ $is_updated_lint = 0 ] ;then
+          echo "is_updated_lint=${is_updated_lint}">>"${GITHUB_OUTPUT}"
+          echo "is_updated_lint=${is_updated_lint}"
+          if [ $is_updated_package == 0 ] && [ $is_updated_lint == 0 ] ;then
             echo "is_skip=1">>"${GITHUB_OUTPUT}";
           else
             echo "is_skip=0">>"${GITHUB_OUTPUT}";
