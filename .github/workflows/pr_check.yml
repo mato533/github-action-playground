@@ -138,7 +138,7 @@ jobs:
           
           git add .
           git commit -m "chore: update version of package.json"
-          git push
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Git
         run: |
@@ -163,7 +163,7 @@ jobs:
         run: |
           COMMENT_FILE="pull_request_comment"
           cat<<EOF >"${COMMENT_FILE}"
-          !github deploy-feature
+          @github run-test
           EOF
           URL="${{ github.event.pull_request.html_url }}"
           gh pr comment -F "${COMMENT_FILE}" "${URL}" 
