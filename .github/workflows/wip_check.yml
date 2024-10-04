@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       is_wip: ${{ steps.check-wip.outputs.is_wip }}
-      is_skip: ${{ steps.check-auto-commit.outputs.is_skip }}
+      is_skip: ${{ steps.check-wip.outputs.is_skip }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,3 +39,4 @@ jobs:
         run: |
           msg="$(git show ${{ github.event.pull_request.head.sha }} -s --format=%B|head -n 1|grep '[AUTO]' |wc -l )"
           echo "is_skip=${msg}">>"${GITHUB_OUTPUT}"
+          echo "is_skip=${msg}"
