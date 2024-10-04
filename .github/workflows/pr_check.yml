@@ -157,7 +157,8 @@ jobs:
           is_updated_package=$(test -n "${{needs.check_package_json.outputs.is_updated}}" && echo 0 || echo ${{needs.check_package_json.outputs.is_updated}})
           echo "is_updated_package=${is_updated_package}" >>"${GITHUB_OUTPUT}"
           echo "is_updated_package=${is_updated_package}"
-          is_updated_lint=${{needs.lint.outputs.is_update_format}}
+          
+          is_updated_lint=$(test -n "${{needs.lint.outputs.is_update_format}}" && echo 0 || echo ${{needs.lint.outputs.is_update_format}})
           echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}">>"${GITHUB_OUTPUT}"
           echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}"
           if  [ $is_updated_package = 0 ] && [ $is_updated_lint = 0 ] ;then
