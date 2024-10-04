@@ -48,7 +48,7 @@ jobs:
           ref: ${{ steps.set-target-branch.outputs.result }}
 
       - name: cat file
-        run: cat test.txt
+        run: cat pacage.json|grep version
 
       - name: Git
         run: |
