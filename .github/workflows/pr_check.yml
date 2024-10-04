@@ -134,7 +134,7 @@ jobs:
         run: |
           git config --local user.email "${{ env.GH_EMAIL }}"
           git config --local user.name "${{ env.GH_USER }}"
-          sed -i -e 's/\("version": "\).*\("\)/\1${{needs.get_version.outputs.app_version}}\2/' package.json
+          sed -i -e 's/\("version": "\).*\("\)/\1${{steps.check-branch.outputs.app_version}}\2/' package.json
           
           git add .
           git commit -m "chore: update version of package.json"
