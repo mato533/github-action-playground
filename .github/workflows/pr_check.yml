@@ -8,9 +8,6 @@ on:
       - synchronize
   
 
-# concurrency:
-#   group: check-${{ github.workflow }}-${{ github.ref }}
-#   cancel-in-progress: true
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -89,7 +86,6 @@ jobs:
     uses: ./.github/workflows/version.yml
 
   check_package_json:
-    # プルリク作った時、package.jsonが更新されてるか確認したい。
     name: Check the version of package.json
     needs:
       - check_wip
@@ -106,19 +102,6 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
       
-
-      # - name: Check main branch
-      #   id: check-diff-version
-      #   run: |
-      #     DIFF_COUNT="$(git diff origin/main --relative package.json |grep '"version":'|wc -l)"
-      #     VAR_NAME="is_update_version"
-      #     if [ ${DIFF_COUNT} -eq 2 ]; then
-      #       echo "Detected to have updated the version in package.json"
-      #       echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
-      #     else
-      #       echo "The version in package.json is not updated"
-      #       echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
-      #     fi
 
       - name: Check package.json
         id: check-branch
@@ -154,11 +137,11 @@ jobs:
         run: |
           echo "package: ${{needs.check_package_json.outputs.is_updated}}"
           echo "lint: ${{needs.lint.outputs.is_update_format }}"
-          is_updated_package=$(test -n "${{needs.check_package_json.outputs.is_updated}}" && echo 0 || echo ${{needs.check_package_json.outputs.is_updated}})
+          is_updated_package=$(test -z "${{needs.check_package_json.outputs.is_updated}}" && echo 0 || echo ${{needs.check_package_json.outputs.is_updated}})
           echo "is_updated_package=${is_updated_package}" >>"${GITHUB_OUTPUT}"
           echo "is_updated_package=${is_updated_package}"
           
-          is_updated_lint=$(test -n "${{needs.lint.outputs.is_update_format}}" && echo 0 || echo ${{needs.lint.outputs.is_update_format}})
+          is_updated_lint=$(test -z "${{needs.lint.outputs.is_update_format}}" && echo 0 || echo ${{needs.lint.outputs.is_update_format}})
           echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}">>"${GITHUB_OUTPUT}"
           echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}"
           if  [ $is_updated_package = 0 ] && [ $is_updated_lint = 0 ] ;then
@@ -217,59 +200,3 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: git push
 
-
-
-      # - name: update package.json
-      #   if: ${{ steps.check-branch.outputs.is_update_package_json > 0 }}
-      #   run: |
-      #     git config --local user.email "${{ env.GH_EMAIL }}"
-      #     git config --local user.name "${{ env.GH_USER }}"
-      #     
-
-      # - name: Git
-      #   run: |
-      #     echo '1 $GITHUB_REF     ' $GITHUB_REF
-      #     echo '2 github.ref      ' ${{ github.ref }}
-      #     echo '3 github.ref_name ' ${{ github.ref_name }}
-      #     echo '4 github.head_ref ' ${{ github.head_ref }} 
-      #     echo '5 github.base_ref '  ${{ github.base_ref }}
-
-  # run_test:
-  #   # プルリク作った時、package.jsonが更新されてるか確認したい。
-  #   name: run Test
-  #   needs:
-  #     - lint
-  #     - check_package_json
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     pull-requests: write
-  #   steps:
-  #     - name: Add comment to run ci
-  #       if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
-  #       run: |
-  #         COMMENT_FILE="pull_request_comment"
-  #         cat<<"EOF" >"${COMMENT_FILE}"
-  #         Please add the following comment and run the test using the latest commit.
-
-  #         `/run-test`
-  #         EOF
-  #         URL="${{ github.event.pull_request.html_url }}"
-  #         gh pr comment -F "${COMMENT_FILE}" "${URL}" 
-
-  #     - name: Run CI
-  #       # if: ${{ (needs.check_package_json.outputs.is_updated == 0) && (needs.lint.outputs.is_update_format == 0) }}
-  #       uses: ./.github/workflows/test.yml
-
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-        
-  #     - name: Git
-  #       run: |
-  #         echo '1 $GITHUB_REF     ' $GITHUB_REF
-  #         echo '2 github.ref      ' ${{ github.ref }}
-  #         echo '3 github.ref_name ' ${{ github.ref_name }}
-  #         echo '4 github.head_ref ' ${{ github.head_ref }} 
-  #         echo '5 github.base_ref '  ${{ github.base_ref }}
-
-  #     - name: test
-  #       run: cat package.json|grep version
