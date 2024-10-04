@@ -43,7 +43,7 @@ jobs:
     needs: 
       - check-release
     if: ${{ needs.check-release.outputs.is_release > 0 }}
-    uses: ./.github/workflows/ci.yml
+    uses: ./.github/workflows/test.yml
 
   get_version:
     name: get version

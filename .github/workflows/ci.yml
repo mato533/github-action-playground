@@ -1,10 +1,13 @@
 name: CI
 on:
-  pull_request:
+  issue_comment:
     types:
-      - opened
-      - reopened
-      - synchronize
+      - created
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - reopened
+  #     - synchronize
   push:
     branches:
       - main
@@ -12,26 +15,37 @@ on:
       - '*'
       - src/**
       - '!**.md'
-  workflow_call:
+  # workflow_call:
+
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check_wip:
-    name: check_wip
-    uses: ./.github/workflows/wip_check.yml
-    
   test:
-    name: Test1
-    needs:
-      - check_wip
-    if: ${{ needs.check_wip.outputs.is_wip == 0 }}
+    # add comment of pull request && comment is KEYWORD
+    if: (github.event.issue.pull_request != null) && github.event.comment.body == '!github run-test'
     runs-on: ubuntu-latest
     steps:
+      # (1) github-scriptを使って、プルリクコメントが付けられたプルリクのマージ元ブランチ名を取得
+      - uses: actions/github-script@v2
+        id: set-target-branch
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          result-encoding: string
+          script: |
+            const pull_request = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            })
+            return pull_request.data.head.ref
+
       - name: checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.set-target-branch.outputs.result }}
 
       - name: cat file
         run: cat test.txt
