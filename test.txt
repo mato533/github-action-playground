@@ -6,21 +6,4 @@ update commit at feature
 
 update feature/test2
 
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
-update
+feature/update5
