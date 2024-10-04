@@ -83,6 +83,7 @@ jobs:
     needs:
       - check_wip
       - get_version
+      - lint
     if: ${{ startsWith(github.head_ref, 'release/') && (needs.check_wip.outputs.is_wip == 0) }}
 
     outputs:
@@ -92,7 +93,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          ref: ${{ github.head_ref }}
+      
 
       - name: Check the version
         id: check-diff-version
