@@ -162,7 +162,7 @@ jobs:
         if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
         run: |
           COMMENT_FILE="pull_request_comment"
-          cat<<EOF >"${COMMENT_FILE}"
+          cat<<"EOF" >"${COMMENT_FILE}"
           Please add the following comment and run the test using the latest commit.
 
           `/run-test`
