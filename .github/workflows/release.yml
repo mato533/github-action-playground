@@ -20,6 +20,7 @@ jobs:
           echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
 
 
+
           
           echo "detected version: ${APP_VERSION}"
 
