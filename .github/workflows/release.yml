@@ -1,13 +1,14 @@
 name: Release
 on:
-  push:
-    branches:
-      - 'release/**'
+  # push:
+  #   branches:
+  #     - 'release/**'
+  create:
 jobs:
   test:
     name: Test1
     runs-on: ubuntu-latest
-    if: github.event.created
+    if: ${{ github.ref_type == 'branch' || startsWith(github.ref_name, 'release/' )  }}
     steps:
       - name: Test
         run: echo test
