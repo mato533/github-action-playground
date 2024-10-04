@@ -1,0 +1,38 @@
+name: Execute Test
+on:
+  workflow_call:
+
+  push:
+    branches:
+      - main
+    paths:
+      - '*'
+      - src/**
+      - '!**.md'
+      
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test1
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: cat file
+        run: cat test.txt
+
+      - name: Git
+        run: |
+          echo '1' $GITHUB_REF
+          echo '2' ${{ github.ref }}
+          echo '3' ${{ github.ref_name }}
+          echo '4' ${{ github.head_ref }} 
+          echo '5' ${{ github.base_ref }}
+
+      - name: check log
+        run: |
+          git log --pretty=format:"%h - %an, %ar : %s" |head -n 10

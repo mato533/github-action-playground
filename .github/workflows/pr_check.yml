@@ -30,7 +30,7 @@ jobs:
     if: ${{ needs.check_wip.outputs.is_wip == 0 }}
     runs-on: ubuntu-latest
     outputs:
-      is_release: ${{ steps.check_changes.outputs.is_changed }}
+      is_update_format: ${{ steps.check_changes.outputs.is_changed }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,15 +83,18 @@ jobs:
     needs:
       - check_wip
       - get_version
+      - lint
     if: ${{ startsWith(github.head_ref, 'release/') && (needs.check_wip.outputs.is_wip == 0) }}
+
+    outputs:
+      is_updated: ${{ steps.check-branch.outputs.is_update_package_json }}
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          ref: ${{ github.head_ref }}
+      
 
       - name: Check the version
         id: check-diff-version
@@ -114,7 +117,7 @@ jobs:
           APP_VERSION="$(echo "${APP_VERSION_TEXT}"| grep -o -E "([0-9]+\.){1}[0-9]+(\.[0-9]+)?")"
           echo "app_version_text=${APP_VERSION_TEXT}" >>"${GITHUB_OUTPUT}"
           echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
-          VAR_NAME="is_error_package_json"
+          VAR_NAME="is_update_package_json"
           if [ "${APP_VERSION_TEXT}" = "${{ needs.get_version.outputs.app_version_text }}" ]; then
             echo "Branch name and package.json are consistent"
             echo "  from branch name  : ${APP_VERSION_TEXT}"
@@ -126,25 +129,45 @@ jobs:
             echo "  from package.json : ${{ needs.get_version.outputs.app_version_text }}"
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           fi
-      - name: update pr (inconsistent)
-        if: ${{ steps.check-branch.outputs.is_error_package_json > 0 }}
+      - name: update package.json
+        if: ${{ steps.check-branch.outputs.is_update_package_json > 0 }}
+        run: |
+          git config --local user.email "${{ env.GH_EMAIL }}"
+          git config --local user.name "${{ env.GH_USER }}"
+          sed -i -e 's/\("version": "\).*\("\)/\1${{steps.check-branch.outputs.app_version}}\2/' package.json
+          
+          git add .
+          git commit -m "chore: update version of package.json"
+          git push origin HEAD:${{ github.head_ref }}
+
+      - name: Git
+        run: |
+          echo '1 $GITHUB_REF     ' $GITHUB_REF
+          echo '2 github.ref      ' ${{ github.ref }}
+          echo '3 github.ref_name ' ${{ github.ref_name }}
+          echo '4 github.head_ref ' ${{ github.head_ref }} 
+          echo '5 github.base_ref '  ${{ github.base_ref }}
+
+  run_test:
+    # プルリク作った時、package.jsonが更新されてるか確認したい。
+    name: run Test
+    needs:
+      - lint
+      - check_package_json
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Add comment to run ci
+        if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
         run: |
           COMMENT_FILE="pull_request_comment"
           cat<<EOF >"${COMMENT_FILE}"
-          Please update package.json
-            release version: ${{ steps.check-branch.outputs.app_version}}
-            package.json   : ${{ needs.get_version.outputs.app_version }}
+          @github run-test
           EOF
           URL="${{ github.event.pull_request.html_url }}"
-          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}" || gh pr comment -F "${COMMENT_FILE}" "${URL}" 
-      - name: update pr (consistent)
-        if: ${{ steps.check-branch.outputs.is_error_package_json == 0 }}
-        run: |
-          COMMENT_FILE="pull_request_comment"
-          cat<<EOF >"${COMMENT_FILE}"
-          Ready to release.
-            release version: ${{ steps.check-branch.outputs.app_version}}
-            package.json   : ${{ needs.get_version.outputs.app_version }}
-          EOF
-          URL="${{ github.event.pull_request.html_url }}"
-          gh pr comment --edit-last -F "${COMMENT_FILE}" "${URL}" || gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+          gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+
+      - name: Run CI
+        if: ${{ (needs.check_package_json.outputs.is_updated == 0) && (needs.lint.outputs.is_update_format == 0) }}
+        uses: ./.github/workflows/test.yml

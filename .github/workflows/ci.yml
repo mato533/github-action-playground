@@ -1,37 +1,51 @@
 name: CI
 on:
-  pull_request:
+  issue_comment:
     types:
-      - opened
-      - reopened
-      - synchronize
-  push:
-    branches:
-      - main
-    paths:
-      - '*'
-      - src/**
-      - '!**.md'
-  workflow_call:
+      - created
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - reopened
+  #     - synchronize
+  # workflow_call:
+
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check_wip:
-    name: check_wip
-    uses: ./.github/workflows/wip_check.yml
-    
-  test:
-    name: Test1
-    needs:
-      - check_wip
-    if: ${{ needs.check_wip.outputs.is_wip == 0 }}
+  check:
     runs-on: ubuntu-latest
     steps:
+      - name: test
+        run: |
+          echo ${{ github.event.issue.pull_request }}
+          echo ${{ github.event.comment.body }}
+  test:
+    # add comment of pull request && comment is KEYWORD
+    if: (github.event.issue.pull_request != null) && github.event.comment.body == '@github run-test'
+    runs-on: ubuntu-latest
+    steps:
+      # (1) github-scriptを使って、プルリクコメントが付けられたプルリクのマージ元ブランチ名を取得
+      - uses: actions/github-script@v2
+        id: set-target-branch
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          result-encoding: string
+          script: |
+            const pull_request = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            })
+            return pull_request.data.head.ref
+
       - name: checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.set-target-branch.outputs.result }}
 
       - name: cat file
         run: cat test.txt
@@ -47,3 +61,7 @@ jobs:
       - name: check log
         run: |
           git log --pretty=format:"%h - %an, %ar : %s" |head -n 10
+
+
+      - name: Run CI
+        uses: ./.github/workflows/test.yml
