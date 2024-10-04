@@ -25,16 +25,5 @@ jobs:
   test:
     # add comment of pull request && comment is KEYWORD
     # if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: check log
-        run: |
-          git log --pretty=format:"%h - %an, %ar : %s" |head -n 10
-          ls -la .github/workflows/
-
-
-      - name: Run CI
-        uses: ./.github/workflows/test.yml
+    name: Run CI
+    uses: ./.github/workflows/test.yml

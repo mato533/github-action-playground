@@ -32,6 +32,10 @@ jobs:
     outputs:
       is_update_format: ${{ steps.check_changes.outputs.is_changed }}
     steps:
+      - name: cond
+        run: |
+          echo "is_wip  :${{ needs.check_wip.outputs.is_wip }}"
+          echo "is_skip :${{ needs.check_wip.outputs.is_skip }}"
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
@@ -92,6 +96,8 @@ jobs:
 
   get_version:
     name: get version
+    needs:
+      - check_wip
     if: ${{ startsWith(github.head_ref, 'release/') }}
     uses: ./.github/workflows/version.yml
 
@@ -150,7 +156,7 @@ jobs:
           fi
 
   commit:
-    name: Check the version of package.json
+    name: Commit and push local changes
     runs-on: ubuntu-latest
     needs:
       - check_package_json
@@ -191,8 +197,9 @@ jobs:
         if: ${{ needs.check_package_json.outputs.is_updated > 0 }}
         run: |
           sed -i -e 's/\("version": "\).*\("\)/\1${{needs.check_package_json.outputs.app_version}}\2/' package.json
+          git add .
           git commit -m "chore: update version of package.json [AUTO]"
-          git push
+          
 
       - name: Push
         env:
