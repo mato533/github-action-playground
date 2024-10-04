@@ -1,8 +1,5 @@
 name: Release
 on:
-  # push:
-  #   branches:
-  #     - 'release/**'
   create:
 jobs:
   test:
@@ -12,3 +9,56 @@ jobs:
     steps:
       - name: Test
         run: echo test
+
+      - name: Get version to be released
+        id: get-version
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          APP_VERSION_TEXT=${BRANCH_NAME##*/}
+          APP_VERSION="$(echo "${APP_VERSION_TEXT}"| grep -o -E "([0-9]+\.){1}[0-9]+(\.[0-9]+)?")"
+          echo "app_version_text=${APP_VERSION_TEXT}" >>"${GITHUB_OUTPUT}"
+          echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
+
+          echo "detected version: ${APP_VERSION}"
+
+
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          # required
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+
+      - name: Configration for git
+        run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+
+      - name: Checkout
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ env.GH_TOKEN }}
+
+      - name: update package.json
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          sed -i -e 's/\("version": "\).*\("\)/\1${{ steps.get-version.outputs.app_version }}\2/' package.json
+          git add -N .
+          if git diff --exit-code --quiet; then
+            echo "No changes detected."
+          else
+            echo "Changes detected."
+            git add .
+            git commit -m "chore: update version of package.json [AUTO]"
+            git push
+          fi
+          
