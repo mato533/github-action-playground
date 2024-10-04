@@ -158,15 +158,17 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      # - name: Add comment to run ci
-      #   if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
-      #   run: |
-      #     COMMENT_FILE="pull_request_comment"
-      #     cat<<EOF >"${COMMENT_FILE}"
-      #     @github run-test
-      #     EOF
-      #     URL="${{ github.event.pull_request.html_url }}"
-      #     gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+      - name: Add comment to run ci
+        if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
+        run: |
+          COMMENT_FILE="pull_request_comment"
+          cat<<EOF >"${COMMENT_FILE}"
+          Please add the following comment and run the test using the latest commit.
+
+          `/run-test`
+          EOF
+          URL="${{ github.event.pull_request.html_url }}"
+          gh pr comment -F "${COMMENT_FILE}" "${URL}" 
 
       - name: Run CI
         if: ${{ (needs.check_package_json.outputs.is_updated == 0) && (needs.lint.outputs.is_update_format == 0) }}
