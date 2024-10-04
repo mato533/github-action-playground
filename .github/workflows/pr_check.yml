@@ -18,24 +18,6 @@ env:
   GH_USER: 'github-actions[bot]'
 
 jobs:
-  check_skip:
-    name: check skip
-    runs-on: ubuntu-latest
-    outputs:
-      is_skip: ${{ steps.check-commit.outputs.is_skip }}
-    steps:
-      - name: check_commit
-        id: check-commit
-        run: |
-          VAR_NAME="is_skip"
-          if git diff --exit-code --quiet; then
-            echo "No changes detected."
-            echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
-          else
-            echo "Changes detected."
-            echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
-          fi
-    
 
   check_wip:
     name: check_wip
