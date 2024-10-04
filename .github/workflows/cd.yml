@@ -19,7 +19,7 @@ env:
 jobs:
   check-release:
     name: Check release
-    if: ${{ github.event.pull_request.merged == true }}
+    if: ${{ startsWith(github.head_ref, 'release/') &&  github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
     outputs:
       is_release: ${{ steps.check.outputs.is_release }}
