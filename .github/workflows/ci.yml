@@ -25,7 +25,7 @@ jobs:
           echo ${{ github.event.comment.body }}
   test:
     # add comment of pull request && comment is KEYWORD
-    if: (github.event.issue.pull_request != null) && github.event.comment.body == '@github run-test'
+    if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
     runs-on: ubuntu-latest
     steps:
       # (1) github-scriptを使って、プルリクコメントが付けられたプルリクのマージ元ブランチ名を取得
@@ -48,7 +48,7 @@ jobs:
           ref: ${{ steps.set-target-branch.outputs.result }}
 
       - name: cat file
-        run: cat test.txt
+        run: cat package.json|grep version
 
       - name: Git
         run: |
