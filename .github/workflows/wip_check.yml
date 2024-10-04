@@ -39,6 +39,6 @@ jobs:
         id: check-auto-commit
         run: |
           commit_msg="$(git show ${{ github.event.pull_request.head.sha }} -s --format=%B)"
-          msg="$(echo "${commit_msg}"|head -n 1|grep 'wip:' |wc -l )"
+          msg="$(echo "${commit_msg}"|head -n 1|grep '[AUTO]' |wc -l )"
           echo "is_skip=${msg}">>"${GITHUB_OUTPUT}"
           echo "is_skip=${msg}"
