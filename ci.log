@@ -69,3 +69,4 @@
 # ========
 24
 RUN LINT
+RUN LINT
