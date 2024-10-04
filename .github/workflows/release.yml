@@ -1,0 +1,13 @@
+name: Release
+on:
+  push:
+    branches:
+      - 'releases/**'
+jobs:
+  test:
+    name: Test1
+    runs-on: ubuntu-latest
+    if: github.event.created
+    steps:
+      - name: Test
+        run: echo test
