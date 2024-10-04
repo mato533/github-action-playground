@@ -58,11 +58,7 @@ jobs:
           else
             echo "Changes detected."
             git add .
-            git commit -F- <<"EOF"
-            chore: update version of package.json
-
-            [skip ci]
-            EOF
+            git commit -m "chore: update version of package.json" -m "[skip ci]"
             git push
           fi
           
