@@ -28,7 +28,7 @@ jobs:
     name: lint
     needs:
       - check_wip
-    if: ${{ needs.check_wip.outputs.is_wip == 0 && needs.check_wip.outputs.is_skip }}
+    if: ${{ needs.check_wip.outputs.is_wip == 0 && needs.check_wip.outputs.is_skip == 0 }}
     runs-on: ubuntu-latest
     outputs:
       is_update_format: ${{ steps.check_changes.outputs.is_changed }}
