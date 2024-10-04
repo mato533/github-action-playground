@@ -88,8 +88,6 @@ jobs:
     outputs:
       is_updated: ${{ steps.check-branch.outputs.is_update_package_json }}
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
