@@ -8,9 +8,9 @@ on:
       - synchronize
   
 
-concurrency:
-  group: check-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: check-${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -18,25 +18,46 @@ env:
   GH_USER: 'github-actions[bot]'
 
 jobs:
+
   check_wip:
     name: check_wip
     uses: ./.github/workflows/wip_check.yml
           
   lint:
-    # if: ${{ !contains( github.event.commits.message, 'wip:') }}
     name: lint
+    runs-on: ubuntu-latest
     needs:
       - check_wip
-    if: ${{ needs.check_wip.outputs.is_wip == 0 }}
-    runs-on: ubuntu-latest
+    if: ${{ needs.check_wip.outputs.is_wip == 0 && needs.check_wip.outputs.is_skip == 0 }}
     outputs:
       is_update_format: ${{ steps.check_changes.outputs.is_changed }}
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          # required
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+
+      - run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+      # git commands like commit work using the bot user
+      # - run: |
+      #     git add .
+      #     git commit -m "Auto-generated changes"
+      #     git push
       - name: Checkout
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-      
+          token: ${{ env.GH_TOKEN }}
           
       - name: lint
         run: |
@@ -45,11 +66,6 @@ jobs:
           ${{ github.event.pull_request.commits }}
           EOF
         # lint したらテストコマンドを流す
-
-      - name: Set Github user informations.
-        run: |
-          git config --local user.email "${{ env.GH_EMAIL }}"
-          git config --local user.name "${{ env.GH_USER }}"
 
       - name: Check if there are any changes
         id: check_changes
@@ -65,12 +81,14 @@ jobs:
           fi
 
 
-      - name: Commit & push
-        if: ${{ steps.check_changes.outputs.is_changed > 0 }}
-        run: |
-          git add .
-          git commit -m "style: format and lint source codes"
-          git push
+      # - name: Commit & push
+      #   if: ${{ steps.check_changes.outputs.is_changed > 0 }}
+      #   env:
+      #     GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      #   run: |
+      #     git add .
+      #     git commit -m "style: format and lint source codes [AUTO]"
+      #     git push
 
   get_version:
     name: get version
@@ -88,6 +106,7 @@ jobs:
 
     outputs:
       is_updated: ${{ steps.check-branch.outputs.is_update_package_json }}
+      app_version: ${{ steps.check-branch.outputs.app_version}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -129,45 +148,110 @@ jobs:
             echo "  from package.json : ${{ needs.get_version.outputs.app_version_text }}"
             echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
           fi
-      - name: update package.json
-        if: ${{ steps.check-branch.outputs.is_update_package_json > 0 }}
-        run: |
-          git config --local user.email "${{ env.GH_EMAIL }}"
-          git config --local user.name "${{ env.GH_USER }}"
-          sed -i -e 's/\("version": "\).*\("\)/\1${{steps.check-branch.outputs.app_version}}\2/' package.json
-          
-          git add .
-          git commit -m "chore: update version of package.json"
-          git push origin HEAD:${{ github.head_ref }}
 
-      - name: Git
-        run: |
-          echo '1 $GITHUB_REF     ' $GITHUB_REF
-          echo '2 github.ref      ' ${{ github.ref }}
-          echo '3 github.ref_name ' ${{ github.ref_name }}
-          echo '4 github.head_ref ' ${{ github.head_ref }} 
-          echo '5 github.base_ref '  ${{ github.base_ref }}
-
-  run_test:
-    # プルリク作った時、package.jsonが更新されてるか確認したい。
-    name: run Test
-    needs:
-      - lint
-      - check_package_json
+  commit:
+    name: Check the version of package.json
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
+    needs:
+      - check_package_json
+      - lint
+    if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
     steps:
-      - name: Add comment to run ci
-        if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
-        run: |
-          COMMENT_FILE="pull_request_comment"
-          cat<<EOF >"${COMMENT_FILE}"
-          @github run-test
-          EOF
-          URL="${{ github.event.pull_request.html_url }}"
-          gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          # required
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
 
-      - name: Run CI
-        if: ${{ (needs.check_package_json.outputs.is_updated == 0) && (needs.lint.outputs.is_update_format == 0) }}
-        uses: ./.github/workflows/test.yml
+      - run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+
+      - name: Checkout
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ env.GH_TOKEN }}
+
+      - name: lint
+        if: ${{ needs.lint.outputs.is_update_format > 0 }}
+        run: |
+          echo "RUN LINT">>ci.log
+          git add .
+          git commit -m "style: format and lint source codes [AUTO]"
+
+      - name: update package.json
+        if: ${{ needs.check_package_json.outputs.is_updated > 0 }}
+        run: |
+          sed -i -e 's/\("version": "\).*\("\)/\1${{needs.check_package_json.outputs.app_version}}\2/' package.json
+          git commit -m "chore: update version of package.json [AUTO]"
+          git push
+
+      - name: Push
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: git push
+
+
+
+      # - name: update package.json
+      #   if: ${{ steps.check-branch.outputs.is_update_package_json > 0 }}
+      #   run: |
+      #     git config --local user.email "${{ env.GH_EMAIL }}"
+      #     git config --local user.name "${{ env.GH_USER }}"
+      #     
+
+      # - name: Git
+      #   run: |
+      #     echo '1 $GITHUB_REF     ' $GITHUB_REF
+      #     echo '2 github.ref      ' ${{ github.ref }}
+      #     echo '3 github.ref_name ' ${{ github.ref_name }}
+      #     echo '4 github.head_ref ' ${{ github.head_ref }} 
+      #     echo '5 github.base_ref '  ${{ github.base_ref }}
+
+  # run_test:
+  #   # プルリク作った時、package.jsonが更新されてるか確認したい。
+  #   name: run Test
+  #   needs:
+  #     - lint
+  #     - check_package_json
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     pull-requests: write
+  #   steps:
+  #     - name: Add comment to run ci
+  #       if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
+  #       run: |
+  #         COMMENT_FILE="pull_request_comment"
+  #         cat<<"EOF" >"${COMMENT_FILE}"
+  #         Please add the following comment and run the test using the latest commit.
+
+  #         `/run-test`
+  #         EOF
+  #         URL="${{ github.event.pull_request.html_url }}"
+  #         gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+
+  #     - name: Run CI
+  #       # if: ${{ (needs.check_package_json.outputs.is_updated == 0) && (needs.lint.outputs.is_update_format == 0) }}
+  #       uses: ./.github/workflows/test.yml
+
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+        
+  #     - name: Git
+  #       run: |
+  #         echo '1 $GITHUB_REF     ' $GITHUB_REF
+  #         echo '2 github.ref      ' ${{ github.ref }}
+  #         echo '3 github.ref_name ' ${{ github.ref_name }}
+  #         echo '4 github.head_ref ' ${{ github.head_ref }} 
+  #         echo '5 github.base_ref '  ${{ github.base_ref }}
+
+  #     - name: test
+  #       run: cat package.json|grep version

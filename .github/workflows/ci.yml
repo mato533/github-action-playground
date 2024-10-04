@@ -1,13 +1,13 @@
 name: CI
 on:
-  issue_comment:
-    types:
-      - created
-  # pull_request:
+  # issue_comment:
   #   types:
-  #     - opened
-  #     - reopened
-  #     - synchronize
+  #     - created
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
   # workflow_call:
 
 
@@ -15,52 +15,25 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_EMAIL: '41898282+github-actions[bot]@users.noreply.github.com'
+  GH_USER: 'github-actions[bot]'
+
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - name: test
-        run: |
-          echo ${{ github.event.issue.pull_request }}
-          echo ${{ github.event.comment.body }}
   test:
     # add comment of pull request && comment is KEYWORD
-    if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
+    # if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
     runs-on: ubuntu-latest
     steps:
-      # (1) github-scriptを使って、プルリクコメントが付けられたプルリクのマージ元ブランチ名を取得
-      - uses: actions/github-script@v2
-        id: set-target-branch
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          result-encoding: string
-          script: |
-            const pull_request = await github.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            })
-            return pull_request.data.head.ref
-
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.set-target-branch.outputs.result }}
-
-      - name: cat file
-        run: cat package.json|grep version
-
-      - name: Git
-        run: |
-          echo '1' $GITHUB_REF
-          echo '2' ${{ github.ref }}
-          echo '3' ${{ github.ref_name }}
-          echo '4' ${{ github.head_ref }} 
-          echo '5' ${{ github.base_ref }}
 
       - name: check log
         run: |
           git log --pretty=format:"%h - %an, %ar : %s" |head -n 10
+          ls -la .github/workflows/
 
 
       - name: Run CI

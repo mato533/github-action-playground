@@ -4,22 +4,41 @@ on:
     outputs:
       is_wip:
         description: "The first output string"
-        value: ${{ jobs.check_wip.outputs.is_wip }}
+        value: ${{ jobs.check_commit.outputs.is_wip }}
+      is_skip:
+        description: "Skip check (auto generated commit)"
+        value: ${{ jobs.check_commit.outputs.is_skip }}
 
 jobs:
-  check_wip:
+  check_commit:
     name: Check wip
     runs-on: ubuntu-latest
     outputs:
-      is_wip: ${{ steps.check_wip.outputs.is_wip }}
+      is_wip: ${{ steps.check-wip.outputs.is_wip }}
+      is_skip: ${{ steps.check-wip.outputs.is_skip }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          ref: ${{ github.head_ref }}
+          fetch-depth: 1
       
-      - name: Check
-        id: check_wip
+      - name: Check wip
+        id: check-wip
         run: |
-          msg="$(git show ${{ github.event.pull_request.head.sha }} -s --format=%B|head -n 1|grep 'wip:' |wc -l )"
+          commit_msg="$(git show ${{ github.event.pull_request.head.sha }} -s --format=%B)"
+          msg="$(echo "${commit_msg}"|head -n 1|grep 'wip:' |wc -l )"
           echo "is_wip=${msg}">>"${GITHUB_OUTPUT}"
+          echo $(git show ${{ github.event.pull_request.head.sha }} -s --format=%B)
+          echo "=== github.head_ref"
+          echo ${{ github.head_ref }}
+          echo "=== github.event.pull_request.commit"
+          echo ${{ github.event.pull_request.commit}}
+
+      - name: Check auto generated commit
+        id: check-auto-commit
+        run: |
+          commit_msg="$(git show ${{ github.event.pull_request.head.sha }} -s --format=%B)"
+          msg="$(echo "${commit_msg}"|head -n 1|grep 'wip:' |wc -l )"
+          echo "is_skip=${msg}">>"${GITHUB_OUTPUT}"
+          echo "is_skip=${msg}"
