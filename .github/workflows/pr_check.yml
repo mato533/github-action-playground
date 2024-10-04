@@ -147,24 +147,47 @@ jobs:
     needs:
       - check_package_json
       - lint
-    if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
+    if: ${{ always() }}
     steps:
+      - name: condition
+        id: condition
+        run: |
+          echo "package: ${{needs.check_package_json.outputs.is_updated}}"
+          echo "lint: ${{needs.lint.outputs.is_update_format }}"
+          is_updated_package=$(test -n "${{needs.check_package_json.outputs.is_updated}}" && echo 0 || echo ${{needs.check_package_json.outputs.is_updated}})
+          echo "is_updated_package=${is_updated_package}" >>"${GITHUB_OUTPUT}"
+          echo "is_updated_package=${is_updated_package}"
+          is_updated_lint=${{needs.lint.outputs.is_update_format}}
+          echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}">>"${GITHUB_OUTPUT}"
+          echo "is_updated_lint=${{needs.lint.outputs.is_update_format}}"
+          if  [ $is_updated_package = 0 ] && [ $is_updated_lint = 0 ] ;then
+            echo "is_skip=1">>"${GITHUB_OUTPUT}";
+          else
+            echo "is_skip=0">>"${GITHUB_OUTPUT}";
+          fi
+
       - uses: actions/create-github-app-token@v1
         id: app-token
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         with:
           # required
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+
       - name: Get GitHub App User ID
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         id: get-user-id
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
 
-      - run: |
+      - name: Configration for git
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
+        run: |
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
 
       - name: Checkout
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         uses: actions/checkout@v4
@@ -173,14 +196,14 @@ jobs:
           token: ${{ env.GH_TOKEN }}
 
       - name: lint
-        if: ${{ needs.lint.outputs.is_update_format > 0 }}
+        if: ${{ steps.condition.outputs.is_skip == 0 && needs.lint.outputs.is_update_format > 0 }}
         run: |
           echo "RUN LINT">>ci.log
           git add .
           git commit -m "style: format and lint source codes [AUTO]"
 
       - name: update package.json
-        if: ${{ needs.check_package_json.outputs.is_updated > 0 }}
+        if: ${{ steps.condition.outputs.is_skip == 0 && needs.check_package_json.outputs.is_updated > 0 }}
         run: |
           sed -i -e 's/\("version": "\).*\("\)/\1${{needs.check_package_json.outputs.app_version}}\2/' package.json
           git add .
@@ -188,6 +211,7 @@ jobs:
           
 
       - name: Push
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: git push
