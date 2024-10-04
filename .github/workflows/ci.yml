@@ -1,8 +1,8 @@
 name: CI
 on:
-  issue_comment:
-    types:
-      - created
+  # issue_comment:
+  #   types:
+  #     - created
   pull_request:
     types:
       - opened
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   test:
     # add comment of pull request && comment is KEYWORD
-    if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
+    # if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
     runs-on: ubuntu-latest
     steps:
 
