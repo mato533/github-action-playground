@@ -8,13 +8,6 @@ on:
   #     - opened
   #     - reopened
   #     - synchronize
-  push:
-    branches:
-      - main
-    paths:
-      - '*'
-      - src/**
-      - '!**.md'
   # workflow_call:
 
 
