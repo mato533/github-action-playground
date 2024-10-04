@@ -8,9 +8,6 @@ on:
       - synchronize
   
 
-# concurrency:
-#   group: check-${{ github.workflow }}-${{ github.ref }}
-#   cancel-in-progress: true
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -20,11 +17,11 @@ env:
 jobs:
 
   check_wip:
-    name: check_wip
+    name: Check latest commit message
     uses: ./.github/workflows/wip_check.yml
           
   lint:
-    name: lint
+    name: Lint and Format
     runs-on: ubuntu-latest
     needs:
       - check_wip
@@ -50,11 +47,6 @@ jobs:
       - run: |
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-      # git commands like commit work using the bot user
-      # - run: |
-      #     git add .
-      #     git commit -m "Auto-generated changes"
-      #     git push
       - name: Checkout
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -85,29 +77,19 @@ jobs:
           fi
 
 
-      # - name: Commit & push
-      #   if: ${{ steps.check_changes.outputs.is_changed > 0 }}
-      #   env:
-      #     GH_TOKEN: ${{ steps.app-token.outputs.token }}
-      #   run: |
-      #     git add .
-      #     git commit -m "style: format and lint source codes [AUTO]"
-      #     git push
 
   get_version:
-    name: get version
+    name: Get version for package.json
     needs:
       - check_wip
     if: ${{ startsWith(github.head_ref, 'release/') }}
     uses: ./.github/workflows/version.yml
 
   check_package_json:
-    # プルリク作った時、package.jsonが更新されてるか確認したい。
     name: Check the version of package.json
     needs:
       - check_wip
       - get_version
-      - lint
     if: ${{ startsWith(github.head_ref, 'release/') && (needs.check_wip.outputs.is_wip == 0) }}
 
     outputs:
@@ -121,20 +103,7 @@ jobs:
           ref: ${{ github.head_ref }}
       
 
-      - name: Check the version
-        id: check-diff-version
-        run: |
-          DIFF_COUNT="$(git diff origin/main --relative package.json |grep '"version":'|wc -l)"
-          VAR_NAME="is_update_version"
-          if [ ${DIFF_COUNT} -eq 2 ]; then
-            echo "Detected to have updated the version in package.json"
-            echo "${VAR_NAME}=1" >>"${GITHUB_OUTPUT}"
-          else
-            echo "The version in package.json is not updated"
-            echo "${VAR_NAME}=0" >>"${GITHUB_OUTPUT}"
-          fi
-
-      - name: check branch
+      - name: Check package.json
         id: check-branch
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
@@ -161,24 +130,48 @@ jobs:
     needs:
       - check_package_json
       - lint
-    if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
+    if: ${{ always() }}
     steps:
+      - name: condition
+        id: condition
+        run: |
+          echo "package: ${{needs.check_package_json.outputs.is_updated}}"
+          echo "lint: ${{needs.lint.outputs.is_update_format }}"
+          is_updated_package=$(test -z "${{needs.check_package_json.outputs.is_updated}}" && echo 0 || echo ${{needs.check_package_json.outputs.is_updated}})
+          echo "is_updated_package=${is_updated_package}" >>"${GITHUB_OUTPUT}"
+          echo "is_updated_package=${is_updated_package}"
+          
+          is_updated_lint=$(test -z "${{needs.lint.outputs.is_update_format}}" && echo 0 || echo ${{needs.lint.outputs.is_update_format}})
+          echo "is_updated_lint=${is_updated_lint}">>"${GITHUB_OUTPUT}"
+          echo "is_updated_lint=${is_updated_lint}"
+          if [ $is_updated_package == 0 ] && [ $is_updated_lint == 0 ] ;then
+            echo "is_skip=1">>"${GITHUB_OUTPUT}";
+          else
+            echo "is_skip=0">>"${GITHUB_OUTPUT}";
+          fi
+
       - uses: actions/create-github-app-token@v1
         id: app-token
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         with:
           # required
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+
       - name: Get GitHub App User ID
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         id: get-user-id
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
 
-      - run: |
+      - name: Configration for git
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
+        run: |
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
 
       - name: Checkout
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         uses: actions/checkout@v4
@@ -187,14 +180,14 @@ jobs:
           token: ${{ env.GH_TOKEN }}
 
       - name: lint
-        if: ${{ needs.lint.outputs.is_update_format > 0 }}
+        if: ${{ steps.condition.outputs.is_skip == 0 && needs.lint.outputs.is_update_format > 0 }}
         run: |
           echo "RUN LINT">>ci.log
           git add .
           git commit -m "style: format and lint source codes [AUTO]"
 
       - name: update package.json
-        if: ${{ needs.check_package_json.outputs.is_updated > 0 }}
+        if: ${{ steps.condition.outputs.is_skip == 0 && needs.check_package_json.outputs.is_updated > 0 }}
         run: |
           sed -i -e 's/\("version": "\).*\("\)/\1${{needs.check_package_json.outputs.app_version}}\2/' package.json
           git add .
@@ -202,63 +195,8 @@ jobs:
           
 
       - name: Push
+        if: ${{ steps.condition.outputs.is_skip == 0 }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: git push
 
-
-
-      # - name: update package.json
-      #   if: ${{ steps.check-branch.outputs.is_update_package_json > 0 }}
-      #   run: |
-      #     git config --local user.email "${{ env.GH_EMAIL }}"
-      #     git config --local user.name "${{ env.GH_USER }}"
-      #     
-
-      # - name: Git
-      #   run: |
-      #     echo '1 $GITHUB_REF     ' $GITHUB_REF
-      #     echo '2 github.ref      ' ${{ github.ref }}
-      #     echo '3 github.ref_name ' ${{ github.ref_name }}
-      #     echo '4 github.head_ref ' ${{ github.head_ref }} 
-      #     echo '5 github.base_ref '  ${{ github.base_ref }}
-
-  # run_test:
-  #   # プルリク作った時、package.jsonが更新されてるか確認したい。
-  #   name: run Test
-  #   needs:
-  #     - lint
-  #     - check_package_json
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     pull-requests: write
-  #   steps:
-  #     - name: Add comment to run ci
-  #       if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
-  #       run: |
-  #         COMMENT_FILE="pull_request_comment"
-  #         cat<<"EOF" >"${COMMENT_FILE}"
-  #         Please add the following comment and run the test using the latest commit.
-
-  #         `/run-test`
-  #         EOF
-  #         URL="${{ github.event.pull_request.html_url }}"
-  #         gh pr comment -F "${COMMENT_FILE}" "${URL}" 
-
-  #     - name: Run CI
-  #       # if: ${{ (needs.check_package_json.outputs.is_updated == 0) && (needs.lint.outputs.is_update_format == 0) }}
-  #       uses: ./.github/workflows/test.yml
-
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-        
-  #     - name: Git
-  #       run: |
-  #         echo '1 $GITHUB_REF     ' $GITHUB_REF
-  #         echo '2 github.ref      ' ${{ github.ref }}
-  #         echo '3 github.ref_name ' ${{ github.ref_name }}
-  #         echo '4 github.head_ref ' ${{ github.head_ref }} 
-  #         echo '5 github.base_ref '  ${{ github.base_ref }}
-
-  #     - name: test
-  #       run: cat package.json|grep version
