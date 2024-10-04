@@ -29,11 +29,8 @@ jobs:
           commit_msg="$(git show ${{ github.event.pull_request.head.sha }} -s --format=%B)"
           msg="$(echo "${commit_msg}"|head -n 1|grep 'wip:' |wc -l )"
           echo "is_wip=${msg}">>"${GITHUB_OUTPUT}"
+          echo "is_wip=${msg}"
           echo $(git show ${{ github.event.pull_request.head.sha }} -s --format=%B)
-          echo "=== github.head_ref"
-          echo ${{ github.head_ref }}
-          echo "=== github.event.pull_request.commit"
-          echo ${{ github.event.pull_request.commit}}
 
       - name: Check auto generated commit
         id: check-auto-commit

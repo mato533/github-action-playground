@@ -32,6 +32,10 @@ jobs:
     outputs:
       is_update_format: ${{ steps.check_changes.outputs.is_changed }}
     steps:
+      - name: cond
+        run: |
+          echo "is_wip  :${{ needs.check_wip.outputs.is_wip }}"
+          echo "is_skip :${{ needs.check_wip.outputs.is_skip }}"
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
