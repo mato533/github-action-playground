@@ -158,16 +158,30 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - name: Add comment to run ci
-        if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
-        run: |
-          COMMENT_FILE="pull_request_comment"
-          cat<<EOF >"${COMMENT_FILE}"
-          @github run-test
-          EOF
-          URL="${{ github.event.pull_request.html_url }}"
-          gh pr comment -F "${COMMENT_FILE}" "${URL}" 
+      # - name: Add comment to run ci
+      #   if: ${{ (needs.check_package_json.outputs.is_updated > 0) || (needs.lint.outputs.is_update_format > 0) }}
+      #   run: |
+      #     COMMENT_FILE="pull_request_comment"
+      #     cat<<EOF >"${COMMENT_FILE}"
+      #     @github run-test
+      #     EOF
+      #     URL="${{ github.event.pull_request.html_url }}"
+      #     gh pr comment -F "${COMMENT_FILE}" "${URL}" 
 
       - name: Run CI
         if: ${{ (needs.check_package_json.outputs.is_updated == 0) && (needs.lint.outputs.is_update_format == 0) }}
         uses: ./.github/workflows/test.yml
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Git
+        run: |
+          echo '1 $GITHUB_REF     ' $GITHUB_REF
+          echo '2 github.ref      ' ${{ github.ref }}
+          echo '3 github.ref_name ' ${{ github.ref_name }}
+          echo '4 github.head_ref ' ${{ github.head_ref }} 
+          echo '5 github.base_ref '  ${{ github.base_ref }}
+
+      - name: test
+        run: cat package.json|grep version
