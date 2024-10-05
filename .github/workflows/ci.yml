@@ -23,7 +23,8 @@ env:
 
 jobs:
   test:
-    # add comment of pull request && comment is KEYWORD
-    # if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
-    name: Run CI
-    uses: ./.github/workflows/test.yml
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: cat github_event_path
+        run: cat $GITHUB_EVENT_PATH
