@@ -1,5 +1,5 @@
 name: CI
-run-name: test ${{github.event.pull_request.title}}
+run-name: test ${{github.event.pull_request.title}} ${{github.event.pull_request.id}}
 on:
   # issue_comment:
   #   types:
