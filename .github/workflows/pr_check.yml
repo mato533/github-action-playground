@@ -1,11 +1,12 @@
 # Lint/Test はpull オープン時オープン時
 name: Check for pull request
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - reopened
+  #     - synchronize
+  workflow_call:
   
 
 
