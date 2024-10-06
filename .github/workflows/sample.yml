@@ -12,5 +12,5 @@ jobs:
         run: |
           echo 1.====
           echo 'Update package.json' |grep '[AUTO]'
-           echo 1.====
+          echo 1.====
           echo 'Update package.json' |grep '\[AUTO\]'
