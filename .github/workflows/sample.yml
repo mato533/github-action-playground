@@ -14,6 +14,6 @@ jobs:
           echo 'Update package.json' |grep '[AUTO]'
           grep --help
           # echo 2.====
-          # echo 'Update package.json' |grep "\[AUTO\]"
+          # echo 'Update package.json' |grep '\[AUTO\]'|wc -l
           # echo 2.====
-          # echo 'Update package.json\n[AUTO]' |grep "\[AUTO\]"
+          # echo 'Update package.json\n[AUTO]' |grep '\[AUTO\]'|wc -l
