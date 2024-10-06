@@ -1,4 +1,5 @@
 name: CI
+run-name: test ${{github.event.pull_request.title}} ${{github.event.pull_request.number}}
 on:
   # issue_comment:
   #   types:
@@ -23,7 +24,15 @@ env:
 
 jobs:
   test:
-    # add comment of pull request && comment is KEYWORD
-    # if: (github.event.issue.pull_request != null) && github.event.comment.body == '/run-test'
-    name: Run CI
-    uses: ./.github/workflows/test.yml
+    name: test
+    runs-on: ubuntu-latest
+    env:
+      TEST_VAR: ${{ github.event.pull_request.title }}
+    steps:
+      - name: cat github_event_path
+        run: cat $GITHUB_EVENT_PATH
+
+      - name:
+        run: |
+          echo 'echo ${TEST_VAR}'
+          echo "${TEST_VAR}"

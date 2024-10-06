@@ -19,6 +19,9 @@ jobs:
           echo "app_version_text=${APP_VERSION_TEXT}" >>"${GITHUB_OUTPUT}"
           echo "app_version=${APP_VERSION}" >>"${GITHUB_OUTPUT}"
 
+
+
+          
           echo "detected version: ${APP_VERSION}"
 
 
@@ -51,7 +54,12 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          echo "Try to update package.json"
+          echo "-- before"
+          cat package.json|grep version
           sed -i -e 's/\("version": "\).*\("\)/\1${{ steps.get-version.outputs.app_version }}\2/' package.json
+          echo "-- after"
+          cat package.json|grep version
           git add -N .
           if git diff --exit-code --quiet; then
             echo "No changes detected."
