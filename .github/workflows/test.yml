@@ -1,4 +1,5 @@
 name: Execute Test
+run-name: TEST EXEC
 on:
   workflow_call:
 
