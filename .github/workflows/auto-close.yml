@@ -13,10 +13,10 @@ jobs:
         env:
           BODY: >
             Thanks for raising this issue 🙏
-
+            <br />
             Unfortunately, we are closing the issue as no reproducible samples were provided within 7 days.
             If there are any updates, please reopen this issue or create new one.
-
+            <br />
             channel. We are happy to help you out there.
         with:
           script: |
@@ -71,7 +71,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: issue.number,
-                    body: process.env.BODY.replace(/\n\n/g, '\n\n\n'),
+                    body: process.env.BODY,
                   })
 
                   await github.rest.issues.update({
