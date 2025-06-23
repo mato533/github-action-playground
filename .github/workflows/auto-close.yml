@@ -19,7 +19,6 @@ jobs:
 
             channel. We are happy to help you out there.
         with:
-          github-token: ${{ secrets.WDIO_BOT_GITHUB_TOKEN }}
           script: |
             const labelName = 'Reproducible Example Missing'
             // const daysBeforeClose = 7
