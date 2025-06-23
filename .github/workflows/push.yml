@@ -3,7 +3,7 @@ run-name: TEST EXEC
 on:
   workflow_dispatch:
 env:
-  GIT_TOKEN: ${{ secrets.MY_TOKEN }}
+  GH_TOKEN: ${{ secrets.MY_TOKEN }}
   GH_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
   GH_USER: "github-actions[bot]"
 jobs:
@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_TOKEN }}
 
       - name: echo file
         run: echo `date` >> test.txt
