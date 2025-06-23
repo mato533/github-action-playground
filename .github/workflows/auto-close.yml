@@ -21,8 +21,7 @@ jobs:
         with:
           script: |
             const labelName = 'Reproducible Example Missing'
-            // const daysBeforeClose = 7
-            const daysBeforeClose = 0
+            const daysBeforeClose = 7
             const perPage = 100
 
             const now = new Date()
