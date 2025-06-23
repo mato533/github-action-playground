@@ -12,10 +12,10 @@ jobs:
       - uses: actions/github-script@v7
         env:
           BODY: >
-            Thanks for raising this issue 🙏
+            Thanks for raising this issue 🙏<br />
             <br />
-            Unfortunately, we are closing the issue as no reproducible samples were provided within 7 days.
-            If there are any updates, please reopen this issue or create new one.
+            Unfortunately, we are closing the issue as no reproducible samples were provided within 7 days.<br />
+            If there are any updates, please reopen this issue or create new one.<br />
             <br />
             channel. We are happy to help you out there.
         with:
