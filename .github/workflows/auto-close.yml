@@ -27,7 +27,7 @@ jobs:
 
             const now = new Date()
             const msInDay = 24 * 60 * 60 * 1000
-            const iterator = octokit.paginate.iterator(octokit.rest.issues.listForRepo, {
+            const iterator = github.paginate.iterator(octokit.rest.issues.listForRepo, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 state: 'open',
