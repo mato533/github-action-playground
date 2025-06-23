@@ -71,7 +71,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: issue.number,
-                    body: process.env.BODY,
+                    body: process.env.BODY.replace(/\n/g,'\r\n'),
                   })
 
                   await github.rest.issues.update({
