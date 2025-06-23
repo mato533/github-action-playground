@@ -1,0 +1,26 @@
+name: Execute Test
+run-name: TEST EXEC
+on:
+  workflow_dispatch:
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+  GH_USER: "github-actions[bot]"
+jobs:
+  test:
+    name: Test1
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: echo file
+        run: echo `date` >> test.txt
+        
+      - name: commit
+        run: |
+          git config --global user.name "${GH_USER}"
+          git config --global user.email "${GH_EMAIL}"
+          git add .
+          git commit -m "update"
+          git push origin
